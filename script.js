@@ -32,7 +32,7 @@ function renderTodos() {
 
   todos.forEach((todo) => {
     const item = document.createElement('li');
-    item.className = `todo-item${todo.completed ? ' completed' : ''}`;
+    item.className = `todo-item${todo.completed ? ' completed' : ''} animate-slide-in`;
 
     const text = document.createElement('p');
     text.className = 'task-text';
@@ -47,14 +47,22 @@ function renderTodos() {
       todo.completed = !todo.completed;
       saveTodos();
       renderTodos();
+      // Add strike animation for completion
+      if (todo.completed) {
+        const taskText = item.querySelector('.task-text');
+        taskText.classList.add('strike-animation');
+      }
     });
 
     const removeButton = document.createElement('button');
     removeButton.textContent = 'Remove';
     removeButton.addEventListener('click', () => {
-      todos = todos.filter((item) => item.id !== todo.id);
-      saveTodos();
-      renderTodos();
+      item.classList.add('animate-slide-out');
+      item.addEventListener('animationend', () => {
+        todos = todos.filter((t) => t.id !== todo.id);
+        saveTodos();
+        renderTodos();
+      }, { once: true });
     });
 
     actions.append(toggleButton, removeButton);
@@ -82,9 +90,22 @@ form.addEventListener('submit', (event) => {
 });
 
 clearCompleted.addEventListener('click', () => {
-  todos = todos.filter((todo) => !todo.completed);
-  saveTodos();
-  renderTodos();
+  const completedItems = list.querySelectorAll('.todo-item.completed');
+  let animationsCompleted = 0;
+
+  if (completedItems.length === 0) return;
+
+  completedItems.forEach((item) => {
+    item.classList.add('animate-slide-out');
+    item.addEventListener('animationend', () => {
+      animationsCompleted++;
+      if (animationsCompleted === completedItems.length) {
+        todos = todos.filter((todo) => !todo.completed);
+        saveTodos();
+        renderTodos();
+      }
+    }, { once: true });
+  });
 });
 
 loadTodos();
