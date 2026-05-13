@@ -3,12 +3,23 @@ const input = document.getElementById('todo-input');
 const list = document.getElementById('todo-list');
 const count = document.getElementById('todo-count');
 const clearCompleted = document.getElementById('clear-completed');
+const navLinks = document.querySelectorAll('.nav-link');
 
 let todos = [];
+let currentFilter = 'all';
 
 function updateCount() {
   const remaining = todos.filter((todo) => !todo.completed).length;
-  count.textContent = `${remaining} task${remaining === 1 ? '' : 's'} remaining`;
+  const total = todos.length;
+  
+  if (currentFilter === 'all') {
+    count.textContent = `${remaining} of ${total} tasks remaining`;
+  } else if (currentFilter === 'active') {
+    count.textContent = `${remaining} active tasks`;
+  } else if (currentFilter === 'completed') {
+    const completed = total - remaining;
+    count.textContent = `${completed} completed tasks`;
+  }
 }
 
 function saveTodos() {
@@ -20,17 +31,30 @@ function loadTodos() {
   todos = stored ? JSON.parse(stored) : [];
 }
 
-function renderTodos() {
+function renderTodos(filter = 'all') {
   list.innerHTML = '';
 
-  if (todos.length === 0) {
+  let filteredTodos = todos;
+  if (filter === 'active') {
+    filteredTodos = todos.filter(todo => !todo.completed);
+  } else if (filter === 'completed') {
+    filteredTodos = todos.filter(todo => todo.completed);
+  }
+
+  if (filteredTodos.length === 0) {
     const emptyState = document.createElement('li');
-    emptyState.textContent = 'No tasks yet. Add one to get started.';
+    if (filter === 'all' && todos.length === 0) {
+      emptyState.textContent = 'No tasks yet. Add one to get started.';
+    } else if (filter === 'active') {
+      emptyState.textContent = 'No active tasks.';
+    } else if (filter === 'completed') {
+      emptyState.textContent = 'No completed tasks.';
+    }
     emptyState.className = 'todo-item';
     list.appendChild(emptyState);
   }
 
-  todos.forEach((todo) => {
+  filteredTodos.forEach((todo) => {
     const item = document.createElement('li');
     item.className = `todo-item${todo.completed ? ' completed' : ''} animate-slide-in`;
 
@@ -46,7 +70,7 @@ function renderTodos() {
     toggleButton.addEventListener('click', () => {
       todo.completed = !todo.completed;
       saveTodos();
-      renderTodos();
+      renderTodos(currentFilter);
       // Add strike animation for completion
       if (todo.completed) {
         const taskText = item.querySelector('.task-text');
@@ -61,7 +85,7 @@ function renderTodos() {
       item.addEventListener('animationend', () => {
         todos = todos.filter((t) => t.id !== todo.id);
         saveTodos();
-        renderTodos();
+        renderTodos(currentFilter);
       }, { once: true });
     });
 
@@ -86,7 +110,7 @@ form.addEventListener('submit', (event) => {
 
   input.value = '';
   saveTodos();
-  renderTodos();
+  renderTodos(currentFilter);
 });
 
 clearCompleted.addEventListener('click', () => {
@@ -102,11 +126,33 @@ clearCompleted.addEventListener('click', () => {
       if (animationsCompleted === completedItems.length) {
         todos = todos.filter((todo) => !todo.completed);
         saveTodos();
-        renderTodos();
+        renderTodos(currentFilter);
       }
     }, { once: true });
   });
 });
 
+// Navbar filter functionality
+navLinks.forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const filter = e.target.dataset.filter;
+    
+    if (filter === 'about') {
+      // Handle about section - could show a modal or redirect
+      alert('Todo App - A simple task management application');
+      return;
+    }
+    
+    // Update active nav link
+    navLinks.forEach(l => l.classList.remove('active'));
+    e.target.classList.add('active');
+    
+    // Update current filter and re-render
+    currentFilter = filter;
+    renderTodos(currentFilter);
+  });
+});
+
 loadTodos();
-renderTodos();
+renderTodos(currentFilter);
